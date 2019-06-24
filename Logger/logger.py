@@ -56,7 +56,6 @@ class Logger(Client):
 					except FileExistsError:
 						pass
 					dump = self.arr[history].dumpArray()
-					print(dump)
 					with open(folder + history + "/" + fname, "w") as file:
 						for line in dump:
 							file.write(line[2] + ": " + line[1] + "\r\n")

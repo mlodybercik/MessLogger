@@ -7,12 +7,13 @@ if __name__ == "__main__":
 		try:
 			client = Logger(input("Login: "), getpass("Password: "))
 		except FBchatException:
-			raise(Exception("Error during loggin, wrong password?"))
+			raise(Exception("Error during logging in, wrong password?"))
 		client.listen()
 	except:
 		try:
 			client.logout()
 		except:
-			raise(Exception("Error during logging out."))
-		logToConsole("[I] Succesful logout.")
+			raise(Exception("Error during logging out. Did you even log in?"))
+		else:
+			logToConsole("[I] Succesful logout.")
 		client.dumpContents()
