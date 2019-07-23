@@ -63,10 +63,16 @@ class Logger(Client):
 						os.mkdir(folder + history)
 					except FileExistsError:
 						pass
-					dump = self.arr[history].dumpArray()
-					with open(folder + history + "/" + fname, "w") as file:
-						for line in dump:
-							file.write(line[2] + ": " + line[1] + "\r\n")
+					try:
+						dump = self.arr[history].dumpArray()
+						with open(folder + history + "/" + fname, "w") as file:
+							for line in dump:
+								file.write(line[2] + ": " + line[1] + "\r\n")
+					except Exception as e:
+						with open(folder + "/exceptions", "wa") as file:
+							file.write(str(e) + "\n")
+						continue
+						
 			except Exception as e:
 				self.logToConsole("[E] Something went wrong when dumping to file. " + e)
 
