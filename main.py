@@ -14,7 +14,7 @@ if __name__ == "__main__":
 		try:
 			if cookies:
 				try:
-					client = Logger("0", "0", session_cookies=cookies, max_tries=1)
+					client = Logger("cookie", "cookie", session_cookies=cookies, max_tries=1)
 				except FBchatUserError:
 					client = Logger(input("Login: "), getpass("Password: "), max_tries=1)
 			else:
@@ -23,9 +23,7 @@ if __name__ == "__main__":
 			raise(Exception("Error during logging in, wrong password/bad cookies?"))
 		client.listen()
 	except:
-		try:
-			client.logout()
-		except:
-			raise(Exception("Error during logging out. Did you even log in?"))
+		if cookies:
+			client.logout(True)
 		else:
-			client.dumpContents()
+			client.logout()
