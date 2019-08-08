@@ -19,11 +19,17 @@ default = {
 "DUMP_CONTENTS": False,
 
 # Live logging to file, useful when leaving it over longer span of time
-"LIVE_LOG": True
+"LIVE_LOG": True,
+
+# Add timestamp to logs
+"TIMESTAMP": True
 }
 
 # TODO:
 # add daemon capabilities
+# add way to manipulate way how log is formatted, eg. "%u %i %t %m" => some processing => "<uid> <threadid> <timestamp> <message>"
+# liveLog = "%t %u %i %m"
+# consoleLog = "%u in %i said: %m"
 
 class Logger(Client):
 	# dict to save message history
@@ -67,7 +73,7 @@ class Logger(Client):
 			fname = time.strftime("%m_%d-%H_%M_%S")
 			for user in content:
 				with createStream(userID, folder, fname) as file:
-					file.write(user[2] + ": " + user[1] + "\r\n", buffering=-1)
+					file.write(user[3] + " " + user[2] + ": " + user[1] + "\r\n", buffering=-1)
 
 	def logToConsole(self, text):
 		print(text)
@@ -82,6 +88,10 @@ class Logger(Client):
 			return None
 
 	def log(self, logType=LogType.NONE, delete=False, **kwargs):
+		# LOG = logging to lenArray
+		# LOG_TO_CONSOLE = logging to console output TODO: changing stdout
+		# LIVE_LOG = live logging to file
+		# DUMP_CONTENTS = dump lenArray to file after exit
 		if isinstance(logType, list):
 			for log in logType:
 				self.log(log, delete, **kwargs)
@@ -95,7 +105,10 @@ class Logger(Client):
 
 			if threadID not in self.arr:
 				self.arr[threadID] = LenArray(self.LENGTH)
-			self.arr[threadID].append([messID, text, authorID])
+			if self.TIMESTAMP:
+				self.arr[threadID].append([messID, text, authorID, kwargs["timestamp"]])
+			else:
+				self.arr[threadID].append([messID, text, authorID])
 
 		if self.LOG_TO_CONSOLE and logType == LogType.LOG_TO_CONSOLE:
 			# If deleted is set and log is on, find the message
@@ -111,9 +124,15 @@ class Logger(Client):
 				text = kwargs["text"]
 
 			if delete:
-				self.logToConsole("[D] {} in {} deleted: {}".format(authorID, threadID, text))
+				if self.TIMESTAMP:
+					self.logToConsole("[D] {}: {} in {} deleted: {}".format(time.time(), authorID, threadID, text))
+				else:
+					self.logToConsole("[D] {} in {} deleted: {}".format(authorID, threadID, text))
 			else:
-				self.logToConsole("[M] {} in {}: {}".format(authorID, threadID, text))
+				if self.TIMESTAMP:
+					self.logToConsole("[M] {}: {} in {}: {}".format(kwargs["timestamp"], authorID, threadID, text))
+				else:
+					self.logToConsole("[M] {} in {}: {}".format(authorID, threadID, text))
 			return
 
 		if self.LIVE_LOG and logType == LogType.LIVE_LOG:
@@ -121,13 +140,12 @@ class Logger(Client):
 			if delete and self.LOG:
 				text = self.findMessage(threadID, kwargs["messID"])
 				if text is None:
-					self.logToConsole("[D] Couldn't resolve deleted message. ID: {} in {}".format(kwargs["messID"], threadID))
 					return
 			# If logging to array is turned off, return message ID
 			elif delete:
 				text = kwargs["messID"]
 			text = kwargs["text"]
-			content = "{}: {}".format(authorID, text)
+			content = "{} {}: {}".format(kwargs["timestamp"], authorID, text)
 			self.logToFile(authorID, content, threadID, live=True)
 			return
 
@@ -143,7 +161,7 @@ class Logger(Client):
 		# if has text add text to previously created LenArray
 		if message_object.text:
 			try:
-				self.log([LogType.TEXT, LogType.LOG_TO_CONSOLE, LogType.LIVE_LOG], authorID = author_id, threadID = thread_id, text = message_object.text, messID = message_object.uid)
+				self.log([LogType.TEXT, LogType.LOG_TO_CONSOLE, LogType.LIVE_LOG], authorID = author_id, threadID = thread_id, text = message_object.text, messID = message_object.uid, timestamp = message_object.timestamp)
 			except Exception as E:
 				traceback.print_exc()
 		# else propably is an attachment, add all URLs to array
@@ -151,7 +169,7 @@ class Logger(Client):
 			for i in message_object.attachments:
 				if isinstance(i, ImageAttachment):
 					try:
-						self.log([LogType.TEXT, LogType.LOG_TO_CONSOLE, LogType.LIVE_LOG], authorID = author_id, threadID = thread_id, text = i.large_preview_url, messID = message_object.uid)
+						self.log([LogType.TEXT, LogType.LOG_TO_CONSOLE, LogType.LIVE_LOG], authorID = author_id, threadID = thread_id, text = i.large_preview_url, messID = message_object.uid, timestamp = message_object.timestamp)
 					except Exception as E:
 						traceback.print_exc()
 
